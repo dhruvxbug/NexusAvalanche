@@ -37,7 +37,7 @@ export default function Hero() {
 					{...fadeUp(16, 0.6, 0.1)}
 					className="max-w-xl text-center font-display text-5xl leading-[0.95] tracking-tight text-foreground md:text-6xl lg:text-[5rem]"
 				>
-					The First <em className="italic">Jurisdiction-Aware</em> L1
+					The <em className="italic">Jurisdiction-Aware L1</em>
 				</motion.h1>
 
 				<motion.p

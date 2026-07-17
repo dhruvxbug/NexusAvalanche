@@ -1,0 +1,148 @@
+Introduction | Avalanche Builder Hub
+Builder Hub
+
+- Academy
+- Blog
+- Chat
+- Console
+- Documentation
+- Ecosystem Careers
+- Events
+- Explorer
+- Grants
+- Integrations
+- Stats Search ⌘ K
+
+-
+
+Network Nodes APIs Tools ACPs
+
+Deploy an Avalanche L1
+Using Builder Console Using Avalanche CLI Using Service Provider Overview
+Avalanche L1s Validator Manager Contracts Network Upgrades
+Considerations Precompile Upgrades EVM Configuration
+Introduction Customize an Avalanche L1 Precompiles
+
+Custom Precompiles
+
+Custom Virtual Machines
+Introduction Simple VM in Any Language Golang VMs
+
+Rust VMs
+
+TimeStamp VM
+
+Introduction
+
+# Introduction
+Learn how to customize the Ethereum Virtual Machine with EVM and Precompiles.
+Welcome to the EVM configuration guide. This documentation explores how to extend and customize your Avalanche L1 using EVM and precompiles . Building upon the Validator Manager capabilities we discussed in the previous section, we'll now dive into other powerful customization features available in EVM.
+
+## Overview of EVM
+EVM is Avalanche's customized version of the Ethereum Virtual Machine, tailored to run on Avalanche L1s. It allows developers to deploy Solidity smart contracts with enhanced capabilities, benefiting from Avalanche's high throughput and low latency. EVM enables more flexibility and performance optimizations compared to the standard EVM.
+Beyond the Validator Manager functionality we've covered, EVM provides additional configuration options through precompiles, allowing you to extend your L1's capabilities even further.
+
+## Genesis Configuration
+Each blockchain has some genesis state when it's created. Each Virtual Machine defines the format and semantics of its genesis data. The genesis configuration is crucial for setting up your Avalanche L1's initial state and behavior.
+
+### Chain Configuration
+The chain configuration section in your genesis file defines fundamental parameters of your blockchain:
+
+```
+`{ " config " : { " chainId " : 43214 , " homesteadBlock " : 0 , " eip150Block " : 0 , " eip150Hash " : "0x2086799aeebeae135c246c65021c82b4e15a2c451340993aacfd2751886514f0" , " eip155Block " : 0 , " eip158Block " : 0 , " byzantiumBlock " : 0 , " constantinopleBlock " : 0 , " petersburgBlock " : 0 , " istanbulBlock " : 0 , " muirGlacierBlock " : 0 } } `
+```
+
+#### Chain ID
+`chainID ` : Denotes the ChainID of to be created chain. Must be picked carefully since a conflict with other chains can cause issues. One suggestion is to check with chainlist.org to avoid ID collision, reserve and publish your ChainID properly.
+You can use  `eth_getChainConfig ` RPC call to get the current chain config. See here for more info.
+
+#### Hard Forks
+The following parameters define EVM hard fork activation times. These should be handled with care as changes may cause compatibility issues:
+
+-  `homesteadBlock `
+-  `eip150Block `
+-  `eip150Hash `
+-  `eip155Block `
+-  `byzantiumBlock `
+-  `constantinopleBlock `
+-  `petersburgBlock `
+-  `istanbulBlock `
+-  `muirGlacierBlock `
+
+### Genesis Block Header
+The genesis block header is defined by several parameters that set the initial state of your blockchain:
+
+```
+`{ " nonce " : "0x0" , " timestamp " : "0x0" , " extraData " : "0x00" , " difficulty " : "0x0" , " mixHash " : "0x0000000000000000000000000000000000000000000000000000000000000000" , " coinbase " : "0x0000000000000000000000000000000000000000" , " number " : "0x0" , " gasUsed " : "0x0" , " parentHash " : "0x0000000000000000000000000000000000000000000000000000000000000000" } `
+```
+
+These parameters have specific roles:
+
+-  `nonce ` ,  `mixHash ` ,  `difficulty ` : These are remnants from Proof of Work systems. For Avalanche, they don't play any relevant role and should be left as their default values.
+-  `timestamp ` : The creation timestamp of the genesis block (commonly set to  `0x0 ` ).
+-  `extraData ` : Optional extra data field (commonly set to  `0x ` ).
+-  `coinbase ` : The address of block producers (usually set to zero address for genesis).
+-  `parentHash ` : The hash of the parent block (set to zero hash for genesis).
+-  `gasUsed ` : Amount of gas used by the genesis block (usually  `0x0 ` ).
+-  `number ` : The block number (must be  `0x0 ` for genesis).
+
+## Precompiles
+Precompiles are specialized smart contracts that execute native Go code within the EVM context. They act as a bridge between Solidity and lower-level functionalities, allowing for performance optimizations and access to features not available in Solidity alone.
+
+### Default Precompiles in EVM
+EVM comes with a set of default precompiles that extend the EVM's functionality:
+
+- AllowList Interface : Interface that manages access control by allowing or restricting specific addresses, inherited by all precompiles.
+- Deployer AllowList : Restricts which addresses can deploy smart contracts.
+- Transaction AllowList : Controls which addresses can submit transactions.
+- Native Minter : Manages the minting and burning of native tokens.
+- Fee Manager : Controls gas fee parameters and fee markets.
+- Reward Manager : Handles the distribution of staking rewards to validators.
+- Warp Messenger : Enables cross-chain communication between Avalanche L1s.
+
+### Precompile Addresses and Configuration
+If a precompile is enabled within the  `genesis.json ` using the respective  `ConfigKey ` , you can interact with the precompile using Foundry or other tools such as Remix.
+Below are the addresses and  `ConfigKey ` values of default precompiles available in EVM. The address and  `ConfigKey ` are defined in the  `module.go ` of each precompile contract .
+Precompile ConfigKey Address Deployer AllowList  `contractDeployerAllowListConfig `  `0x0200000000000000000000000000000000000000 ` Native Minter  `contractNativeMinterConfig `  `0x0200000000000000000000000000000000000001 ` Transaction AllowList  `txAllowListConfig `  `0x0200000000000000000000000000000000000002 ` Fee Manager  `feeManagerConfig `  `0x0200000000000000000000000000000000000003 ` Reward Manager  `rewardManagerConfig `  `0x0200000000000000000000000000000000000004 ` Warp Messenger  `warpConfig `  `0x0200000000000000000000000000000000000005 `
+
+#### Example Interaction
+For example, if  `contractDeployerAllowListConfig ` is enabled in the  `genesis.json ` :
+
+genesis.json
+
+```
+`"contractDeployerAllowListConfig" : { " adminAddresses " : [ // Addresses that can manage (add/remove) enabled addresses. They are also enabled themselves for contract deployment. "0x4f9e12d407b18ad1e96e4f139ef1c144f4058a4e" , "0x4b9e5977a46307dd93674762f9ddbe94fb054def" ], " blockTimestamp " : 0 , " enabledAddresses " : [ "0x09c6fa19dd5d41ec6d0f4ca6f923ec3d941cc569" // Addresses that can only deploy contracts ] } , `
+```
+
+We can then add an  `Enabled ` address to the Deployer AllowList by interacting with the  `IAllowList ` interface at  `0x0200000000000000000000000000000000000000 ` :
+
+```
+`cast send 0x0200000000000000000000000000000000000000 setEnabled ( address addr ) < ADDRESS_TO_ENABL E > --rpc-url $MY_L1_RPC --private-key $ADMIN_PRIVATE_KEY `
+```
+
+Is this guide helpful?
+Yes No
+Copy Markdown
+
+Precompile Upgrades
+
+Learn how to enable, disable, and configure precompiles in your Subnet-EVM.
+Customize an Avalanche L1
+
+Learn how to customize your EVM-powered Avalanche L1.
+
+### On this page
+
+Overview of EVM
+Genesis Configuration
+Chain Configuration
+Chain ID
+Hard Forks
+Genesis Block Header
+Precompiles
+Default Precompiles in EVM
+Precompile Addresses and Configuration
+Example Interaction
+
+Page Actions
+Edit on GitHub Report Issue Copy Markdown Open in AI
