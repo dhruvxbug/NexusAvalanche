@@ -1,22 +1,19 @@
 import {
 	ArrowLeftRight,
-	ArrowUpRight,
 	BadgeCheck,
 	Bell,
 	ChevronDown,
 	ChevronRight,
-	CreditCard,
 	Home,
-	Landmark,
-	ListChecks,
 	type LucideIcon,
 	MoreVertical,
 	Plus,
-	Route,
 	Search,
-	Send,
 	Settings,
-	Wallet,
+	Shield,
+	Lock,
+	FileKey,
+	UserCheck
 } from "lucide-react";
 
 interface NavItem {
@@ -28,34 +25,28 @@ interface NavItem {
 }
 
 const NAV_ITEMS: NavItem[] = [
-	{ icon: Home, label: "Home", active: true },
-	{ icon: ListChecks, label: "Tasks", badge: "10" },
-	{ icon: ArrowLeftRight, label: "Transactions" },
-	{ icon: ArrowUpRight, label: "Payments", chevron: true },
-	{ icon: CreditCard, label: "Cards" },
-	{ icon: Landmark, label: "Capital" },
-	{ icon: Wallet, label: "Accounts", chevron: true },
+	{ icon: Home, label: "Overview", active: true },
+	{ icon: Shield, label: "Tx Allowlist", badge: "3 New" },
+	{ icon: Lock, label: "eERC Assets" },
+	{ icon: FileKey, label: "Deployer Access", chevron: true },
 ];
 
 const WORKFLOW_ITEMS: NavItem[] = [
-	{ icon: Route, label: "Trake rutes" },
-	{ icon: Send, label: "Payments" },
-	{ icon: Bell, label: "Notifications" },
-	{ icon: Settings, label: "Settings" },
+	{ icon: UserCheck, label: "KYC Verifications" },
+	{ icon: ArrowLeftRight, label: "Encrypted Transfers" },
+	{ icon: Settings, label: "Chain Config" },
 ];
 
 const QUICK_ACTIONS = [
-	"Request",
-	"Transfer",
-	"Deposit",
-	"Pay Bill",
-	"Create Invoice",
+	"Whitelist Address",
+	"Issue eERC",
+	"View Audit Log",
 ];
 
 const ACCOUNTS: Array<[string, string]> = [
-	["Credit", "$98,125.50"],
-	["Treasury", "$6,750,200.00"],
-	["Operations", "$1,592,864.82"],
+	["Private USDC (eERC)", "$12,450.00"],
+	["Public AVAX", "1,250 AVAX"],
+	["Compliance Bond", "$50,000.00"],
 ];
 
 interface Transaction {
@@ -63,29 +54,29 @@ interface Transaction {
 	description: string;
 	amount: string;
 	positive?: boolean;
-	status: "Pending" | "Completed";
+	status: "Verified" | "Encrypted" | "Pending";
 }
 
 const TRANSACTIONS: Transaction[] = [
-	{ date: "Jun 10", description: "AWS", amount: "-$5,200", status: "Pending" },
+	{ date: "Just now", description: "Alice -> Bob (eERC)", amount: "Hidden", status: "Encrypted" },
 	{
-		date: "Jun 09",
-		description: "Client Payment",
-		amount: "+$125,000",
+		date: "2m ago",
+		description: "KYC Approval: 0x4a...f9",
+		amount: "0.01 AVAX",
 		positive: true,
-		status: "Completed",
+		status: "Verified",
 	},
 	{
-		date: "Jun 08",
-		description: "Payroll",
-		amount: "-$85,450",
-		status: "Completed",
+		date: "1h ago",
+		description: "Treasury -> DAO (eERC)",
+		amount: "Hidden",
+		status: "Encrypted",
 	},
 	{
-		date: "Jun 06",
-		description: "Office Supplies",
-		amount: "-$1,200",
-		status: "Completed",
+		date: "3h ago",
+		description: "Deployer Access Granted",
+		amount: "Authorized",
+		status: "Verified",
 	},
 ];
 
@@ -120,13 +111,13 @@ function TopBar() {
 				<div className="flex h-5 w-5 items-center justify-center rounded-md bg-primary font-display text-primary-foreground">
 					N
 				</div>
-				<span className="font-medium text-foreground">Nexora</span>
+				<span className="font-medium text-foreground">NexusChain</span>
 				<ChevronDown className="h-3 w-3 text-muted-foreground" />
 			</div>
 
 			<div className="hidden max-w-[260px] flex-1 items-center gap-1.5 rounded-md bg-secondary px-2.5 py-1.5 text-muted-foreground sm:flex">
 				<Search className="h-3 w-3 shrink-0" />
-				<span className="flex-1">Search</span>
+				<span className="flex-1">Search addresses, blocks...</span>
 				<span className="rounded border border-border bg-background px-1 text-[9px]">
 					⌘K
 				</span>
@@ -134,11 +125,11 @@ function TopBar() {
 
 			<div className="flex shrink-0 items-center gap-2.5">
 				<span className="rounded-md bg-primary px-2.5 py-1 font-medium text-primary-foreground">
-					Move Money
+					L1 Admin
 				</span>
 				<Bell className="h-3.5 w-3.5 text-muted-foreground" />
 				<div className="flex h-5 w-5 items-center justify-center rounded-full bg-accent/15 text-[9px] font-semibold text-accent">
-					JB
+					0x
 				</div>
 			</div>
 		</div>
@@ -152,7 +143,7 @@ function Sidebar() {
 				<SidebarLink key={item.label} {...item} />
 			))}
 			<p className="mt-3 px-2 pb-1 text-[9px] font-medium uppercase tracking-wider text-muted-foreground">
-				Workflows
+				Compliance Tools
 			</p>
 			{WORKFLOW_ITEMS.map((item) => (
 				<SidebarLink key={item.label} {...item} />
@@ -165,16 +156,15 @@ function BalanceCard() {
 	return (
 		<div className="min-w-0 flex-1 basis-0 overflow-hidden rounded-lg border border-border bg-background p-3">
 			<div className="flex items-center gap-1">
-				<span className="font-medium text-foreground">Mercury Balance</span>
+				<span className="font-medium text-foreground">Network TVL (eERC)</span>
 				<BadgeCheck className="h-3 w-3 text-accent" />
 			</div>
 			<p className="mt-1.5 text-lg font-semibold tracking-tight text-foreground">
-				$8,450,190<span className="text-xs text-muted-foreground">.32</span>
+				$24,450,190<span className="text-xs text-muted-foreground">.00</span>
 			</p>
 			<div className="mt-1 flex items-center gap-3">
-				<span className="text-muted-foreground">Last 30 Days</span>
-				<span className="font-medium text-success">+$1.8M</span>
-				<span className="font-medium text-destructive">-$900K</span>
+				<span className="text-muted-foreground">Encrypted Assets</span>
+				<span className="font-medium text-success">ZK-Secured</span>
 			</div>
 			<svg
 				viewBox="0 0 400 80"
@@ -205,7 +195,7 @@ function AccountsCard() {
 	return (
 		<div className="min-w-0 flex-1 basis-0 overflow-hidden rounded-lg border border-border bg-background p-3">
 			<div className="flex items-center justify-between">
-				<span className="font-medium text-foreground">Accounts</span>
+				<span className="font-medium text-foreground">Active Assets</span>
 				<div className="flex items-center gap-1.5 text-muted-foreground">
 					<Plus className="h-3 w-3" />
 					<MoreVertical className="h-3 w-3" />
@@ -231,14 +221,14 @@ function AccountsCard() {
 function TransactionsTable() {
 	return (
 		<div className="mt-3 rounded-lg border border-border bg-background p-3">
-			<h4 className="font-medium text-foreground">Recent Transactions</h4>
+			<h4 className="font-medium text-foreground">Recent Network Activity</h4>
 			<table className="mt-2 w-full">
 				<thead>
 					<tr className="text-left text-[10px] text-muted-foreground">
-						<th className="py-1 font-normal">Date</th>
-						<th className="py-1 font-normal">Description</th>
-						<th className="py-1 text-right font-normal">Amount</th>
-						<th className="py-1 text-right font-normal">Status</th>
+						<th className="py-1 font-normal">Time</th>
+						<th className="py-1 font-normal">Action</th>
+						<th className="py-1 text-right font-normal">Details</th>
+						<th className="py-1 text-right font-normal">State</th>
 					</tr>
 				</thead>
 				<tbody>
@@ -260,6 +250,8 @@ function TransactionsTable() {
 									className={`inline-flex rounded-full px-2 py-0.5 text-[10px] font-medium ${
 										tx.status === "Pending"
 											? "bg-warning/10 text-warning"
+											: tx.status === "Encrypted" 
+											? "bg-purple-500/10 text-purple-400"
 											: "bg-success/10 text-success"
 									}`}
 								>
@@ -277,11 +269,11 @@ function TransactionsTable() {
 function MainContent() {
 	return (
 		<div className="flex-1 bg-secondary/30 p-3 md:p-4">
-			<h3 className="text-sm font-semibold text-foreground">Welcome, Jane</h3>
+			<h3 className="text-sm font-semibold text-foreground">Network Overview</h3>
 
 			<div className="mt-2.5 flex flex-wrap items-center gap-1.5">
 				<span className="rounded-full bg-accent px-2.5 py-1 text-[10px] font-medium text-accent-foreground">
-					Send
+					Active Validators: 8
 				</span>
 				{QUICK_ACTIONS.map((action) => (
 					<span
@@ -292,7 +284,7 @@ function MainContent() {
 					</span>
 				))}
 				<span className="ml-auto text-[10px] text-muted-foreground">
-					Customize
+					L1 Parameters
 				</span>
 			</div>
 
