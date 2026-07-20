@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import { z } from "zod";
+import crypto from "crypto";
 import { KycService } from "../services/kyc.service";
 
 const kycService = new KycService();
@@ -13,20 +14,22 @@ const SubmitKycSchema = z.object({
 
 const WebhookSchema = z.object({
   kycRequestId: z.string().uuid(),
-  decision: z.enum(["APPROVED", "REJECTED"]),
 });
+
+const VERIFF_API_SECRET = process.env.VERIFF_API_SECRET || "";
 
 export class KycController {
   
   public async submit(req: Request, res: Response): Promise<void> {
     try {
       const parsedBody = SubmitKycSchema.parse(req.body);
-      const request = await kycService.submitKyc(parsedBody.userAddress, parsedBody.jurisdiction, parsedBody.documentId);
+      const { request, veriffSessionUrl } = await kycService.submitKyc(parsedBody.userAddress, parsedBody.jurisdiction, parsedBody.documentId);
       
       res.status(202).json({
         success: true,
         message: "KYC submitted. Pending asynchronous verification.",
-        kycRequestId: request.id
+        kycRequestId: request.id,
+        veriffSessionUrl
       });
     } catch (error: any) {
       if (error instanceof z.ZodError) {
@@ -52,23 +55,28 @@ export class KycController {
   }
 
   public async webhook(req: Request, res: Response): Promise<void> {
+    const signature = req.headers['x-hmac-signature'];
+    const rawBody = req.body; // In express, ensure this is a raw buffer or string for strict verification
+
     try {
-      // In production, we would verify a cryptographic signature from the provider here
-      const parsedBody = WebhookSchema.parse(req.body);
-      
-      const updatedRequest = await kycService.processWebhook(parsedBody.kycRequestId, parsedBody.decision);
-      
-      res.status(200).json({
-        success: true,
-        status: updatedRequest.status,
-        txHash: updatedRequest.txHash
-      });
-    } catch (error: any) {
-       if (error instanceof z.ZodError) {
-        res.status(400).json({ error: "Validation failed", details: error.issues });
-      } else {
-        res.status(400).json({ error: error.message });
+      if (VERIFF_API_SECRET && signature) {
+         const calculatedDigest = crypto.createHmac('sha256', VERIFF_API_SECRET)
+             .update(rawBody)
+             .digest('hex');
+         
+         if (calculatedDigest !== signature) {
+             res.status(401).send("Unauthorized: Invalid signature");
+             return;
+         }
       }
+
+      // Parse payload
+      const payload = typeof rawBody === 'string' || Buffer.isBuffer(rawBody) ? JSON.parse(rawBody.toString()) : rawBody;
+      
+      await kycService.processVeriffWebhook(payload);
+      res.json({received: true});
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
     }
   }
 }

@@ -12,7 +12,7 @@ const fadeUp = (y: number, duration: number, delay = 0) => ({
 	transition: { duration, delay, ease: "easeOut" as const },
 });
 
-export default function Hero() {
+export default function Hero({ connectWallet }: { connectWallet?: () => void }) {
 	return (
 		<section className="relative flex flex-1 flex-col items-center px-6 pt-8 md:pt-12">
 			<video
@@ -51,8 +51,8 @@ export default function Hero() {
 					{...fadeUp(16, 0.6, 0.3)}
 					className="mt-5 flex items-center gap-3"
 				>
-					<Button className="rounded-full px-6 py-5 font-body text-sm font-medium">
-						Book a demo
+					<Button onClick={connectWallet} className="rounded-full px-6 py-5 font-body text-sm font-medium">
+						Connect Wallet
 					</Button>
 					<Button
 						variant="ghost"

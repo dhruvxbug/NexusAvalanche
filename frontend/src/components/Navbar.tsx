@@ -1,21 +1,7 @@
-import { ethers } from "ethers";
 
 const NAV_LINKS = ["Features", "How It Works", "FAQ", "Docs"];
 
-export default function Navbar({ account, setAccount }: { account: string | null; setAccount: (acct: string | null) => void }) {
-	const connectWallet = async () => {
-		if ((window as any).ethereum) {
-			try {
-				const provider = new ethers.BrowserProvider((window as any).ethereum);
-				const accounts = await provider.send("eth_requestAccounts", []);
-				setAccount(accounts[0]);
-			} catch (err) {
-				console.error("User denied account access");
-			}
-		} else {
-			alert("Please install MetaMask!");
-		}
-	};
+export default function Navbar({ account, setAccount, connectWallet }: { account: string | null; setAccount: (acct: string | null) => void; connectWallet: () => void }) {
 
 	return (
 		<header className="w-full bg-background border-b border-border sticky top-0 z-50">

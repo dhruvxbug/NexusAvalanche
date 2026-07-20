@@ -27,8 +27,9 @@ model KycRequest {
   user          User     @relation(fields: [userId], references: [id])
   jurisdiction  String
   documentId    String
-  status        String   @default("PENDING") // PENDING, APPROVED, REJECTED
-  txHash        String?  // The transaction hash on the Jurisdiction Chain if approved
-  createdAt     DateTime @default(now())
+  status            String   @default("PENDING") // PENDING, APPROVED, REJECTED
+  txHash            String?  // The transaction hash on the Jurisdiction Chain if approved
+  veriffSessionId   String?  // The Veriff Session ID
+  createdAt         DateTime @default(now())
   updatedAt     DateTime @updatedAt
 }

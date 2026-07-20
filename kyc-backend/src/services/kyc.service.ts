@@ -1,5 +1,11 @@
 import { PrismaClient } from "@prisma/client";
 import { BlockchainService } from "./blockchain.service";
+import crypto from 'crypto';
+import axios from 'axios';
+
+const VERIFF_API_KEY = process.env.VERIFF_API_KEY || "";
+const VERIFF_API_SECRET = process.env.VERIFF_API_SECRET || "";
+const VERIFF_BASE_URL = 'https://stationapi.veriff.com';
 
 export class KycService {
   private prisma = new PrismaClient();
@@ -28,50 +34,82 @@ export class KycService {
       throw new Error("User is already whitelisted.");
     }
 
+    const sessionData = {
+      verification: {
+        vendorData: user.id,
+      }
+    };
+    
+    let veriffSessionUrl = "mock_url_if_no_keys";
+    let veriffSessionId = user.id + "_mock"; // Fallback ID
+    try {
+        if (VERIFF_API_KEY) {
+            const response = await axios({
+                method: 'post',
+                url: VERIFF_BASE_URL + '/v1/sessions/',
+                headers: {
+                    'X-AUTH-CLIENT': VERIFF_API_KEY,
+                    'Content-Type': 'application/json'
+                },
+                data: sessionData
+            });
+            veriffSessionUrl = response.data.verification.url;
+            veriffSessionId = response.data.verification.id;
+        }
+    } catch(e) {
+        console.error("Veriff API error. Generating mock URL for test.", e);
+    }
+
     const request = await this.prisma.kycRequest.create({
       data: {
         userId: user.id,
         jurisdiction,
         documentId,
         status: "PENDING",
+        veriffSessionId: veriffSessionId,
       },
     });
 
-    return request;
+    return { request, veriffSessionUrl };
   }
 
   /**
-   * Mock webhook processor: simulates async approval from Onfido/Sumsub
+   * Process webhook from Veriff
    */
-  public async processWebhook(kycRequestId: string, decision: "APPROVED" | "REJECTED") {
-    const request = await this.prisma.kycRequest.findUnique({
-      where: { id: kycRequestId },
+  public async processVeriffWebhook(payload: any) {
+    const verification = payload.verification;
+    if (!verification || !verification.id) return;
+    
+    const sessionId = verification.id;
+    const status = verification.status;
+
+    const request = await this.prisma.kycRequest.findFirst({
+      where: { veriffSessionId: sessionId },
       include: { user: true },
     });
 
-    if (!request) throw new Error("KYC Request not found");
-    if (request.status !== "PENDING") throw new Error("Request already processed");
+    if (!request || request.status !== "PENDING") return;
 
-    if (decision === "REJECTED") {
-      return await this.prisma.kycRequest.update({
-        where: { id: kycRequestId },
+    if (status === 'approved') {
+      // If APPROVED, interact with the blockchain to whitelist the address
+      const txHash = await this.blockchainService.addToWhitelist(request.user.walletAddress);
+
+      // Update DB
+      await this.prisma.user.update({
+        where: { id: request.userId },
+        data: { isWhitelisted: true },
+      });
+
+      await this.prisma.kycRequest.update({
+        where: { id: request.id },
+        data: { status: "APPROVED", txHash },
+      });
+    } else if (status === 'declined' || status === 'abandoned') {
+      await this.prisma.kycRequest.update({
+        where: { id: request.id },
         data: { status: "REJECTED" },
       });
     }
-
-    // If APPROVED, interact with the blockchain to whitelist the address
-    const txHash = await this.blockchainService.addToWhitelist(request.user.walletAddress);
-
-    // Update DB
-    await this.prisma.user.update({
-      where: { id: request.userId },
-      data: { isWhitelisted: true },
-    });
-
-    return await this.prisma.kycRequest.update({
-      where: { id: kycRequestId },
-      data: { status: "APPROVED", txHash },
-    });
   }
 
   public async getStatus(walletAddress: string) {

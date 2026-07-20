@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { ShieldAlert, CheckCircle2, Loader2, Fingerprint, Activity } from 'lucide-react';
+import { createVeriffFrame } from '@veriff/incontext-sdk';
 
 interface ComplianceDashboardProps {
   account: string;
@@ -15,12 +16,15 @@ export const ComplianceDashboard = ({ account }: ComplianceDashboardProps) => {
       const data = await response.json();
       if (data.isWhitelisted) {
         setStatus('Verified (Whitelisted)');
+        return true;
       } else {
         setStatus('Pending / Not Verified');
+        return false;
       }
     } catch (error) {
       console.error('Error fetching KYC status:', error);
       setStatus('Error fetching status (Backend offline?)');
+      return false;
     }
   };
 
@@ -29,6 +33,21 @@ export const ComplianceDashboard = ({ account }: ComplianceDashboardProps) => {
       checkStatus(account);
     }
   }, [account]);
+
+  // Polling mechanism when pending
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+    if (status === 'Pending / Not Verified' && loading) {
+      interval = setInterval(async () => {
+        const isVerified = await checkStatus(account);
+        if (isVerified) {
+          clearInterval(interval);
+          setLoading(false);
+        }
+      }, 3000);
+    }
+    return () => clearInterval(interval);
+  }, [status, loading, account]);
 
   const submitKyc = async () => {
     if (!account) return;
@@ -47,31 +66,29 @@ export const ComplianceDashboard = ({ account }: ComplianceDashboardProps) => {
       });
       const data = await response.json();
       
-      if (data.success && data.kycRequestId) {
-        // Simulate the asynchronous webhook from a provider (e.g. Onfido)
-        const webhookResponse = await fetch(`http://localhost:3001/api/kyc/webhook`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            kycRequestId: data.kycRequestId,
-            decision: "APPROVED"
-          })
+      if (data.success && data.veriffSessionUrl) {
+        createVeriffFrame({
+            url: data.veriffSessionUrl,
+            onEvent: function(msg) {
+                switch(msg) {
+                    case 'STARTED':
+                        break;
+                    case 'CANCELED':
+                        setLoading(false);
+                        break;
+                    case 'FINISHED':
+                        // The user completed the flow. Polling will handle the status update.
+                        break;
+                }
+            }
         });
-        const webhookData = await webhookResponse.json();
-        
-        if (webhookData.success) {
-          alert("KYC Verified! Tx: " + webhookData.txHash);
-          setStatus('Verified (Whitelisted)');
-        } else {
-          alert("Webhook Error: " + webhookData.error);
-        }
       } else {
-        alert("Error: " + data.error);
+        alert("Error: " + (data.error || "Failed to create KYC request"));
+        setLoading(false);
       }
     } catch (error) {
       console.error(error);
       alert("Error submitting KYC. Ensure the backend is running on port 3001.");
-    } finally {
       setLoading(false);
     }
   };
