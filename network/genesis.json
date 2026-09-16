@@ -24,11 +24,11 @@
     "allowFeeRecipients": false,
     "contractDeployerAllowListConfig": {
       "blockTimestamp": 0,
-      "adminAddresses": ["0xA1602f982E36ca8294e0f7B32b2054f28aa6317f"]
+      "adminAddresses": ["0xA1602f982E36ca8294e0f7B32b2054f28aa6317f", "0x8db97C7cEcE249c2b98bDC0226Cc4C2A57BF52FC"]
     },
     "txAllowListConfig": {
       "blockTimestamp": 0,
-      "adminAddresses": ["0xA1602f982E36ca8294e0f7B32b2054f28aa6317f"]
+      "adminAddresses": ["0xA1602f982E36ca8294e0f7B32b2054f28aa6317f", "0x8db97C7cEcE249c2b98bDC0226Cc4C2A57BF52FC"]
     }
   },
   "alloc": {

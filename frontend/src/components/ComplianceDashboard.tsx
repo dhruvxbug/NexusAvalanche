@@ -12,7 +12,7 @@ export const ComplianceDashboard = ({ account }: ComplianceDashboardProps) => {
 
   const checkStatus = async (address: string) => {
     try {
-      const response = await fetch(`http://localhost:3001/api/kyc/status/${address}`);
+      const response = await fetch(`http://localhost:3002/api/kyc/status/${address}`);
       const data = await response.json();
       if (data.isWhitelisted) {
         setStatus('Verified (Whitelisted)');
@@ -53,7 +53,7 @@ export const ComplianceDashboard = ({ account }: ComplianceDashboardProps) => {
     if (!account) return;
     setLoading(true);
     try {
-      const response = await fetch(`http://localhost:3001/api/kyc/verify`, {
+      const response = await fetch(`http://localhost:3002/api/kyc/verify`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -88,7 +88,7 @@ export const ComplianceDashboard = ({ account }: ComplianceDashboardProps) => {
       }
     } catch (error) {
       console.error(error);
-      alert("Error submitting KYC. Ensure the backend is running on port 3001.");
+      alert("Error submitting KYC. Ensure the backend is running on port 3002.");
       setLoading(false);
     }
   };

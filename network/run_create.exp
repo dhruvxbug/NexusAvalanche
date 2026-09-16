@@ -1,0 +1,8 @@
+#!/usr/bin/expect -f
+set timeout -1
+spawn avalanche blockchain create jurisdictionchain --genesis ./genesis.json --evm --proof-of-authority --sovereign --validator-manager-owner 0xA1602f06C2E246b9a888c3be313c0516b3457a41 --proxy-contract-owner 0xA1602f06C2E246b9a888c3be313c0516b3457a41 --latest --force
+expect "Token Symbol:"
+send "JUR\r"
+expect "Do you want to connect your blockchain with other blockchains or the C-Chain?:"
+send "\r"
+expect eof

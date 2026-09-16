@@ -12,6 +12,7 @@
 	"dependencies": {
 		"@avalabs/ac-eerc-sdk": "^2.0.61",
 		"@radix-ui/react-slot": "^1.1.1",
+		"@veriff/incontext-sdk": "^2.5.0",
 		"class-variance-authority": "^0.7.1",
 		"clsx": "^2.1.1",
 		"ethers": "^6.17.0",
