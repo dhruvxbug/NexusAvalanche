@@ -15,6 +15,7 @@ datasource db {
 model User {
   id            String       @id @default(uuid())
   walletAddress String       @unique
+  did           String?      // did:ethr:<chainId>:<address>
   isWhitelisted Boolean      @default(false)
   createdAt     DateTime     @default(now())
   updatedAt     DateTime     @updatedAt
@@ -22,14 +23,16 @@ model User {
 }
 
 model KycRequest {
-  id            String   @id @default(uuid())
-  userId        String
-  user          User     @relation(fields: [userId], references: [id])
-  jurisdiction  String
-  documentId    String
+  id                String   @id @default(uuid())
+  userId            String
+  user              User     @relation(fields: [userId], references: [id])
+  jurisdiction      String
+  documentId        String
   status            String   @default("PENDING") // PENDING, APPROVED, REJECTED
   txHash            String?  // The transaction hash on the Jurisdiction Chain if approved
   veriffSessionId   String?  // The Veriff Session ID
+  ipfsCid           String?  // IPFS Content Identifier for encrypted KYC documents
+  vcJwt             String?  // W3C Verifiable Credential JWT issued on approval
   createdAt         DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  updatedAt         DateTime @updatedAt
 }

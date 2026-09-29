@@ -23,13 +23,15 @@ export class KycController {
   public async submit(req: Request, res: Response): Promise<void> {
     try {
       const parsedBody = SubmitKycSchema.parse(req.body);
-      const { request, veriffSessionUrl } = await kycService.submitKyc(parsedBody.userAddress, parsedBody.jurisdiction, parsedBody.documentId);
+      const result = await kycService.submitKyc(parsedBody.userAddress, parsedBody.jurisdiction, parsedBody.documentId);
       
       res.status(202).json({
         success: true,
         message: "KYC submitted. Pending asynchronous verification.",
-        kycRequestId: request.id,
-        veriffSessionUrl
+        kycRequestId: result.request.id,
+        veriffSessionUrl: result.veriffSessionUrl,
+        did: result.did,
+        ipfsCid: result.ipfsCid,
       });
     } catch (error: any) {
       if (error instanceof z.ZodError) {
@@ -77,6 +79,64 @@ export class KycController {
       res.json({received: true});
     } catch (error: any) {
       res.status(500).json({ error: error.message });
+    }
+  }
+
+  /**
+   * GET /api/kyc/did/:address
+   * Resolve the DID Document for a wallet address.
+   */
+  public async resolveDid(req: Request, res: Response): Promise<void> {
+    try {
+      const address = req.params.address as string;
+      if (!/^0x[a-fA-F0-9]{40}$/.test(address)) {
+        res.status(400).json({ error: "Invalid address format" });
+        return;
+      }
+      const didDocument = kycService.getDidDocument(address);
+      res.status(200).json(didDocument);
+    } catch (error: any) {
+      res.status(500).json({ error: "Failed to resolve DID" });
+    }
+  }
+
+  /**
+   * GET /api/kyc/vc/:address
+   * Get the latest Verifiable Credential for a wallet address.
+   */
+  public async getVc(req: Request, res: Response): Promise<void> {
+    try {
+      const address = req.params.address as string;
+      if (!/^0x[a-fA-F0-9]{40}$/.test(address)) {
+        res.status(400).json({ error: "Invalid address format" });
+        return;
+      }
+      const vc = await kycService.getLatestVc(address);
+      if (!vc) {
+        res.status(404).json({ error: "No Verifiable Credential found for this address" });
+        return;
+      }
+      res.status(200).json(vc);
+    } catch (error: any) {
+      res.status(500).json({ error: "Failed to fetch Verifiable Credential" });
+    }
+  }
+
+  /**
+   * POST /api/kyc/vc/verify
+   * Verify a Verifiable Credential JWT.
+   */
+  public async verifyVc(req: Request, res: Response): Promise<void> {
+    try {
+      const { vcJwt } = req.body;
+      if (!vcJwt || typeof vcJwt !== "string") {
+        res.status(400).json({ error: "vcJwt is required" });
+        return;
+      }
+      const result = await kycService.verifyVc(vcJwt);
+      res.status(200).json(result);
+    } catch (error: any) {
+      res.status(500).json({ error: "Verification failed" });
     }
   }
 }
