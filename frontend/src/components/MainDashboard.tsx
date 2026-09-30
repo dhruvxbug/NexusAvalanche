@@ -7,8 +7,6 @@ import {
 	ChevronRight,
 	Home,
 	type LucideIcon,
-	MoreVertical,
-	Plus,
 	Search,
 	Settings,
 	Shield,
@@ -39,12 +37,6 @@ const WORKFLOW_ITEMS: NavItem[] = [
 	{ icon: UserCheck, label: "KYC Verifications" },
 	{ icon: ArrowLeftRight, label: "Encrypted Transfers" },
 	{ icon: Settings, label: "Chain Config" },
-];
-
-const QUICK_ACTIONS = [
-	"Whitelist Address",
-	"Issue eERC",
-	"View Audit Log",
 ];
 
 const CHART_CURVE =
@@ -131,7 +123,9 @@ function Sidebar() {
 	);
 }
 
-function MainContent({ account, kycData }: { account: string, kycData: any }) {
+// `account` remains part of the public prop type and is still passed by the
+// parent, but this panel derives everything it renders from `kycData`.
+function MainContent({ kycData }: { account: string, kycData: any }) {
     const isWhitelisted = kycData?.isWhitelisted;
     const did = kycData?.did || "Pending DID Issue...";
     const vcJwt = kycData?.vcJwt;
