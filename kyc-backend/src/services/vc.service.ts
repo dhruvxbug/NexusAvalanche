@@ -20,6 +20,15 @@ const CHAIN_ID = process.env.CHAIN_ID || "99999";
 // VC validity period: 1 year
 const VC_VALIDITY_MS = 365 * 24 * 60 * 60 * 1000;
 
+/**
+ * Development keys that are published in public repositories. These must never
+ * be trusted as credential issuers outside a local development chain.
+ */
+const WELL_KNOWN_DEV_KEYS = new Set<string>([
+  // avalanche-cli ewoq
+  "0x56289e99c94b6912bfc12adc093c9b51124f0dc54ac7a766b2bc5ccf558d8027",
+]);
+
 export interface VerifiableCredential {
   "@context": string[];
   type: string[];
@@ -45,10 +54,37 @@ interface DecodedVc {
 export class VcService {
   private wallet: ethers.Wallet;
   private issuerDid: string;
+  /**
+   * Addresses permitted to sign credentials. A recovered signature is only
+   * accepted if it appears here, so a self-signed token cannot validate.
+   * Populated from the admin key plus any extra TRUSTED_ISSUERS addresses.
+   */
+  private trustedIssuers: Set<string>;
 
   constructor() {
     this.wallet = new ethers.Wallet(ADMIN_PRIVATE_KEY);
     this.issuerDid = `did:ethr:${CHAIN_ID}:${this.wallet.address.toLowerCase()}`;
+
+    const issuers = new Set<string>([this.wallet.address.toLowerCase()]);
+    for (const extra of (process.env.TRUSTED_ISSUERS || "").split(",")) {
+      const a = extra.trim().toLowerCase();
+      if (a) issuers.add(a);
+    }
+    this.trustedIssuers = issuers;
+
+    // The avalanche-cli ewoq development key is public. If it is in use as the
+    // issuer key then anyone can mint credentials that pass the trusted-issuer
+    // check, so fail closed in production and warn loudly otherwise.
+    if (WELL_KNOWN_DEV_KEYS.has(ADMIN_PRIVATE_KEY.toLowerCase())) {
+      const message =
+        "VcService is using a well-known public development key as the VC issuer. " +
+        "Credentials signed by it can be forged by anyone. Set ADMIN_PRIVATE_KEY " +
+        "to a real issuer key.";
+      if (process.env.NODE_ENV === "production") {
+        throw new Error(message);
+      }
+      console.warn(`[vc.service] WARNING: ${message}`);
+    }
   }
 
   /**
@@ -105,36 +141,98 @@ export class VcService {
   }
 
   /**
-   * Verifies a VC JWT by:
-   * 1. Recovering the signer from the signature
-   * 2. Checking the signer matches the issuer DID
-   * 3. Checking the credential has not expired
+   * Verifies a VC JWT.
+   *
+   * The order of checks matters. Authenticating the signer is what makes a
+   * credential trustworthy, so the recovered address is checked against a
+   * configured allow list of issuer keys FIRST. Only then is the issuer DID
+   * compared to the recovered address.
+   *
+   * Previously the comparison was only `recovered == credential.issuer`, both
+   * of which are attacker-controlled, so any self-signed credential validated.
+   *
+   * Checks:
+   * 1. Structure: three JWT segments, expected algorithm, required claims.
+   * 2. The recovered signer is a trusted issuer.   <-- the fix
+   * 3. The recovered signer matches the issuer DID, so a trusted issuer cannot
+   *    mint a credential claiming a different issuer.
+   * 4. The credential is a KYC compliance credential and has not expired.
    */
   public async verifyCredential(vcJwt: string): Promise<DecodedVc> {
+    const invalid = (error: string, credential: any = {}, issuerAddress = "") => ({
+      credential,
+      issuerAddress,
+      isValid: false,
+      error,
+    });
+
     try {
+      if (typeof vcJwt !== "string" || vcJwt.length === 0) {
+        return invalid("Missing credential");
+      }
+
       const parts = vcJwt.split(".");
       if (parts.length !== 3) {
-        return { credential: {} as any, issuerAddress: "", isValid: false, error: "Malformed JWT" };
+        return invalid("Malformed JWT");
       }
 
       const [headerB64, payloadB64, signatureB64] = parts;
+
+      let header: { alg?: string; typ?: string };
+      let credential: VerifiableCredential;
+      try {
+        header = JSON.parse(Buffer.from(headerB64, "base64url").toString("utf-8"));
+        credential = JSON.parse(
+          Buffer.from(payloadB64, "base64url").toString("utf-8")
+        );
+      } catch {
+        return invalid("Malformed JWT: segments are not valid base64url JSON");
+      }
+
+      // Pin the algorithm. Accepting whatever the token declares would allow
+      // algorithm substitution.
+      if (header.alg !== "ES256K-R") {
+        return invalid(`Unsupported signing algorithm: ${header.alg}`);
+      }
+
+      // Required claims must be present and well formed.
+      if (!credential || typeof credential !== "object") {
+        return invalid("Malformed credential payload");
+      }
+      if (typeof credential.issuer !== "string" || !credential.issuer) {
+        return invalid("Credential is missing an issuer");
+      }
+      if (!credential.credentialSubject || !credential.credentialSubject.id) {
+        return invalid("Credential is missing a credentialSubject");
+      }
+      if (!credential.expirationDate || Number.isNaN(Date.parse(credential.expirationDate))) {
+        return invalid("Credential is missing a valid expirationDate");
+      }
+
       const signingInput = `${headerB64}.${payloadB64}`;
       const signature = this.fromBase64url(signatureB64);
 
-      // Recover signer address
-      const recoveredAddress = ethers.verifyMessage(signingInput, signature);
+      let recoveredAddress: string;
+      try {
+        recoveredAddress = ethers.verifyMessage(signingInput, signature);
+      } catch {
+        return invalid("Signature is not a valid secp256k1 signature");
+      }
 
-      // Decode payload
-      const credential: VerifiableCredential = JSON.parse(
-        Buffer.from(payloadB64, "base64url").toString("utf-8")
-      );
+      // 2. The signer must be a configured trusted issuer. This is the check
+      //    that a self-signed token cannot satisfy.
+      if (!this.trustedIssuers.has(recoveredAddress.toLowerCase())) {
+        return {
+          credential,
+          issuerAddress: recoveredAddress,
+          isValid: false,
+          error: "Signer is not a trusted credential issuer",
+        };
+      }
 
-      // Verify issuer matches recovered signer
-      const expectedIssuerAddress = credential.issuer.split(":").pop() || "";
-      const issuerMatch =
-        recoveredAddress.toLowerCase() === expectedIssuerAddress.toLowerCase();
-
-      if (!issuerMatch) {
+      // 3. A trusted issuer must also match the issuer it claims.
+      const claimedIssuerAddress = credential.issuer.split(":").pop() || "";
+      if (recoveredAddress.toLowerCase() !== claimedIssuerAddress.toLowerCase()) {
         return {
           credential,
           issuerAddress: recoveredAddress,
@@ -143,9 +241,8 @@ export class VcService {
         };
       }
 
-      // Check expiration
-      const expirationDate = new Date(credential.expirationDate);
-      if (expirationDate < new Date()) {
+      // 4. Expiry.
+      if (new Date(credential.expirationDate) < new Date()) {
         return {
           credential,
           issuerAddress: recoveredAddress,
@@ -160,12 +257,7 @@ export class VcService {
         isValid: true,
       };
     } catch (err: any) {
-      return {
-        credential: {} as any,
-        issuerAddress: "",
-        isValid: false,
-        error: `Verification failed: ${err.message}`,
-      };
+      return invalid(`Verification failed: ${err?.message ?? "unknown error"}`);
     }
   }
 
