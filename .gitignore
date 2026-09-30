@@ -70,3 +70,7 @@ __pycache__/
 venv/
 env/
 .env/
+
+# Scratch output from local tooling
+chrome-tmp/
+brag-output/
