@@ -1,0 +1,107 @@
+{
+  "meta": {
+    "chain": "NexusAvalanche local sovereign L1 (Subnet-EVM v0.8.0, avalanchego v1.14.0)",
+    "chainId": 99999,
+    "blockchainId": "2RWrwh4shNNcQhZvAgZmj4mi8BrvYp112yvg1dCTMVgJVZV2wr",
+    "rpc": "http://127.0.0.1:9654/ext/bc/2RWrwh4shNNcQhZvAgZmj4mi8BrvYp112yvg1dCTMVgJVZV2wr/rpc",
+    "measuredAt": "2026-09-30",
+    "eercImplementation": "eerc-backend-converter (ava-labs EncryptedERC, standalone mode)",
+    "verifiers": "Groth16, 0 contributions (dev trusted setup), solc 0.8.27",
+    "host": "macOS arm64, Node v22.16.0",
+    "tokenDecimals": 2
+  },
+  "jrdl_policy_evaluation": {
+    "method": "kyc-backend JrdlService.evaluate() called 100000x per case after 10000 warmup iterations; hrtime.bigint()",
+    "allow_path_median_us": 0.125,
+    "allow_path_mean_us": 0.136,
+    "deny_path_median_us": 8.167,
+    "deny_path_median_ms": 0.008167,
+    "deny_path_p95_us": 9.875,
+    "note": "Deny path is slower only because it constructs an Error. Both are sub-microsecond to sub-10-microsecond and negligible against any block interval.",
+    "correctness": "6/6 decision cases matched expected ALLOW/DENY",
+    "caveat": "kyc.service.ts hardcodes amlRiskScore=0 and isSanctioned=false, so the AML and sanctions rules of GLOBAL_POLICY cannot fire on the live webhook path. Timings are valid; policy coverage on the live path is not."
+  },
+  "txallowlist": {
+    "method": "network/benchmark-allowlist.mjs, 12 samples, fresh address per sample, nonce-tracked sequential sends",
+    "precompile": "0x0200000000000000000000000000000000000002",
+    "setEnabled_gas": {
+      "min": 43347,
+      "median": 43359,
+      "max": 43359
+    },
+    "setNone_gas": {
+      "min": 43347,
+      "median": 43359,
+      "max": 43359
+    },
+    "read_allowlist_observation_ms": {
+      "min": 12.56,
+      "median": 13.46,
+      "p95": 15.88,
+      "max": 15.88
+    },
+    "setEnabled_tx_to_receipt_ms": {
+      "min": 4095.03,
+      "median": 4098.23,
+      "p95": 4126.32,
+      "max": 4126.32
+    },
+    "baseline_plain_transfer_gas": 21000,
+    "baseline_plain_transfer_ms": {
+      "min": 84.19,
+      "median": 2127.77,
+      "p95": 4139.9,
+      "max": 4139.9
+    },
+    "attribution": "The multi-second figure is NOT allowlist overhead. A plain self-transfer with no allowlist involvement shows the same bimodal distribution (median 2127.77ms, p95 4139.90ms). The local L1 builds a block only in response to a transaction, with an effective scheduling quantum of about 2.07s, so a transaction waits 0, 1 or 2 quanta depending on phase. Only gas and the read observation latency are attributable to the allowlist.",
+    "blocking_latency_measured": "included in setEnabled_tx_to_receipt_ms above"
+  },
+  "eerc": {
+    "method": "eerc-backend-converter/scripts/benchmark-eerc.ts; verifier gas isolated with eth_estimateGas against each Groth16 verifier's verifyProof",
+    "registration": {
+      "allowlist_grant_ms": 605.06,
+      "client_proof_gen_ms": 2966.67,
+      "client_calldata_ms": 0.45,
+      "submit_ms": 532.55,
+      "gas_total": 321889,
+      "verifier_gas": 248279
+    },
+    "private_mint": {
+      "client_proof_gen_ms": 4850.3,
+      "submit_ms": 511.54,
+      "gas_total": 729404,
+      "verifier_gas": 386067,
+      "amount_wei": 10000
+    },
+    "private_transfer": {
+      "client_proof_gen_ms": 5393.34,
+      "submit_ms": 511.64,
+      "gas_total": 943112,
+      "verifier_gas": 444611,
+      "amount_wei": 2500
+    },
+    "plain_transfer_baseline_gas": 21000,
+    "eip20_comparison_note": "A standard ERC-20 transfer is 21000 gas on this chain. A private eERC transfer is 943112 gas, about 44.9x. The dominant term is the Groth16 pairing check at 444611 gas, 47.1 percent of the transfer."
+  },
+  "ccip": {
+    "method": "contracts/ccip/scripts/benchmark-ccip.mjs against CrossChainIdentity, with MockCCIPRouter and MockLink",
+    "ccipSend_evm_to_any_gas": 87246,
+    "ccipSend_evm_to_any_submit_ms": 91.69,
+    "ccipReceive_any_to_evm_gas": 130854,
+    "ccipReceive_any_to_evm_submit_ms": 4099.26,
+    "event_emitted": true,
+    "non_router_caller_rejected": true,
+    "scope": "LOWER BOUND ONLY",
+    "not_measured": "The real Chainlink CCIP network fee. It is an oracle-quoted off-chain value denominated in LINK and requires a live CCIP Router, a funded LINK balance, and a registered destination chain selector. None exist on this L1. The 87221 figure is the cost of CrossChainIdentity's own logic plus one mock router call and MUST NOT be presented as a CCIP fee.",
+    "security_finding": "RESOLVED. CCIPReceiver in Chainlink CCIP v2 authenticates the caller with onlyRouter but exposes no source-chain allow list, so _ccipReceive trusted any2EvmMessage.sourceChainSelector unconditionally. CrossChainIdentity now keeps its own supportedChains mapping, rejects untrusted sources with SourceChainNotAllowed, and fails closed until setSupportedChains is called. The inbound path costs 2338 gas more than before the fix (128516 to 130854).",
+    "untrusted_source_chain_rejected": true
+  },
+  "reproduce": {
+    "boot": "./network/deploy_l1.sh",
+    "rpc": "node network/resolve-rpc.mjs",
+    "allowlist": "node network/benchmark-allowlist.mjs $(cat rpc) --samples 12",
+    "jrdl": "cd kyc-backend && npx tsx scripts/benchmark-jrdl.ts",
+    "eerc": "cd eerc-backend-converter && npx hardhat run scripts/benchmark-eerc.ts --network jurisdictionChain",
+    "ccip": "cd contracts/ccip && npx hardhat build && node scripts/benchmark-ccip.mjs <rpc>"
+  }
+}

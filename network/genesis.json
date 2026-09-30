@@ -23,7 +23,7 @@
     "muirGlacierBlock": 0,
     "petersburgBlock": 0,
     "warpConfig": {
-      "blockTimestamp": 1790676889,
+      "blockTimestamp": 1790745592,
       "quorumNumerator": 67,
       "requirePrimaryNetworkSigners": true
     },
@@ -52,7 +52,7 @@
     }
   },
   "nonce": "0x0",
-  "timestamp": "0x6abb8f99",
+  "timestamp": "0x6abc9bf8",
   "extraData": "0x",
   "gasLimit": "0x7a1200",
   "difficulty": "0x0",

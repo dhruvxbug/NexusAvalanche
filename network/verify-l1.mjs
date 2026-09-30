@@ -20,6 +20,12 @@ const TX_ALLOWLIST = "0x0200000000000000000000000000000000000002";
 const DEPLOYER_ALLOWLIST = "0x0200000000000000000000000000000000000000";
 const EXPECTED_CHAIN_ID = 99999n;
 
+// Well-known avalanche-cli ewoq development key. It is prefunded and is a
+// TxAllowList Admin in genesis.json. Never use it on a public network.
+const ADMIN_KEY =
+  process.env.ADMIN_PRIVATE_KEY ||
+  "0x56289e99c94b6912bfc12adc093c9b51124f0dc54ac7a766b2bc5ccf558d8027";
+
 export const ROLE_NONE = 0n;
 export const ROLE_ENABLED = 1n;
 export const ROLE_ADMIN = 2n;
@@ -62,6 +68,32 @@ function fail(msg) {
   console.log(`  \x1b[31mFAIL\x1b[0m ${msg}`);
 }
 
+/**
+ * Send a transaction with an explicitly tracked nonce.
+ *
+ * The provider caches the transaction count, so consecutive sends otherwise
+ * reuse a nonce and fail with "nonce too low". This script issues several
+ * transactions in a row, so the counter is tracked locally.
+ */
+function trackedWallet(key, provider) {
+  const wallet = new ethers.Wallet(key, provider);
+  let next = null;
+  return {
+    wallet,
+    async nextNonce() {
+      if (next === null) next = await provider.getTransactionCount(wallet.address, "pending");
+      return next++;
+    },
+    reset() {
+      next = null;
+    },
+    async send(to, value = 0n) {
+      const tx = await wallet.sendTransaction({ to, value, nonce: await this.nextNonce() });
+      return tx;
+    },
+  };
+}
+
 export async function getRole(provider, address, which = TX_ALLOWLIST) {
   const contract = new ethers.Contract(which, ALLOWLIST_ABI, provider);
   return BigInt(await contract.readAllowList(address));
@@ -87,12 +119,17 @@ async function main() {
   }
 
   const block1 = await provider.getBlockNumber();
-  await new Promise((r) => setTimeout(r, 2500));
-  const block2 = await provider.getBlockNumber();
-  if (block2 > block1) {
-    pass(`producing blocks (${block1} -> ${block2})`);
-  } else {
-    fail(`not producing blocks (stuck at ${block1})`);
+
+  // This local PoA L1 builds a block in response to transactions rather than on
+  // a fixed timer, so liveness is proven by mining, not by waiting.
+  const admin = trackedWallet(ADMIN_KEY, provider);
+  const adminAddress = admin.wallet.address;
+  try {
+    const tx = await admin.send(adminAddress);
+    const receipt = await tx.wait(1, 60000);
+    pass(`mines transactions (block ${block1} -> ${receipt.blockNumber})`);
+  } catch (e) {
+    fail(`could not mine a transaction: ${(e.shortMessage || e.message).slice(0, 120)}`);
   }
 
   // 2. Precompile reachable
@@ -123,16 +160,12 @@ async function main() {
 
   // 4. Enforcement: an unknown address must be rejected.
   const stranger = ethers.Wallet.createRandom().connect(provider);
-  const admin = new ethers.Wallet(
-    "0x56289e99c94b6912bfc12adc093c9b51124f0dc54ac7a766b2bc5ccf558d8027",
-    provider
-  );
-  await (await admin.sendTransaction({ to: stranger.address, value: ethers.parseEther("1") })).wait();
+  await (await admin.send(stranger.address, ethers.parseEther("1"))).wait();
 
   let blocked = false;
   let errorText = "";
   try {
-    await stranger.sendTransaction({ to: admin.address, value: 0n });
+    await stranger.sendTransaction({ to: adminAddress, value: 0n });
   } catch (e) {
     errorText = e.message || "";
     blocked = errorText.includes("non-allow listed");
@@ -145,8 +178,8 @@ async function main() {
   }
 
   // 5. setEnabled lifts the restriction
-  const asAdmin = new ethers.Contract(TX_ALLOWLIST, ALLOWLIST_ABI, admin);
-  await (await asAdmin.setEnabled(stranger.address)).wait();
+  const asAdmin = new ethers.Contract(TX_ALLOWLIST, ALLOWLIST_ABI, admin.wallet);
+  await (await asAdmin.setEnabled(stranger.address, { nonce: await admin.nextNonce() })).wait();
   const role = await getRole(provider, stranger.address);
   if (role === ROLE_ENABLED) {
     pass("setEnabled grants transaction permission");
@@ -155,7 +188,7 @@ async function main() {
   }
 
   try {
-    const tx = await stranger.sendTransaction({ to: admin.address, value: 0n });
+    const tx = await stranger.sendTransaction({ to: adminAddress, value: 0n });
     await tx.wait();
     pass("allowlisted address can transact");
   } catch (e) {
@@ -163,7 +196,9 @@ async function main() {
   }
 
   // Leave the chain as we found it.
-  await (await asAdmin.setNone(stranger.address)).wait();
+  await (
+    await asAdmin.setNone(stranger.address, { nonce: await admin.nextNonce() })
+  ).wait();
   const restored = await getRole(provider, stranger.address);
   if (restored === ROLE_NONE) {
     pass("setNone revokes permission (cleanup verified)");
