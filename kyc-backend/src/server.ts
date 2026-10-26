@@ -4,6 +4,7 @@ import helmet from "helmet";
 import rateLimit from "express-rate-limit";
 import winston from "winston";
 import kycRoutes from "./routes/kyc.routes";
+import eercRoutes from "./routes/eerc.routes";
 
 // Setup Logger
 const logger = winston.createLogger({
@@ -25,10 +26,10 @@ app.use(helmet());
 app.use(cors());
 app.use(express.json());
 
-// Rate Limiting (100 requests per 15 minutes per IP)
+// Rate Limiting (1000 requests per 15 minutes per IP for smooth demo)
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 100,
+  max: 1000,
   standardHeaders: true,
   legacyHeaders: false,
 });
@@ -42,6 +43,7 @@ app.use((req: Request, res: Response, next: NextFunction) => {
 
 // Routes
 app.use("/api/kyc", kycRoutes);
+app.use("/api/eerc", eercRoutes);
 
 // Global Error Handler
 app.use((err: any, req: Request, res: Response, next: NextFunction) => {

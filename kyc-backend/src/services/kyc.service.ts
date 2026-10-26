@@ -125,6 +125,7 @@ export class KycService {
 
     const request = await this.prisma.kycRequest.findFirst({
       where: { veriffSessionId: sessionId },
+      orderBy: { createdAt: 'desc' },
       include: { user: true },
     });
 

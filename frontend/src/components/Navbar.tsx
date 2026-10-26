@@ -1,7 +1,21 @@
 
-const NAV_LINKS = ["Features", "How It Works", "FAQ", "Docs"];
+const NAV_LINKS = [
+	{ label: "Features", href: "#features" },
+	{ label: "How It Works", href: "#how-it-works" },
+	{ label: "FAQ", href: "#faq" },
+];
 
-export default function Navbar({ account, setAccount, connectWallet }: { account: string | null; setAccount: (acct: string | null) => void; connectWallet: () => void }) {
+export default function Navbar({
+	account,
+	setAccount,
+	connectWallet,
+	connectDemo = () => {},
+}: {
+	account: string | null;
+	setAccount: (acct: string | null) => void;
+	connectWallet: () => void;
+	connectDemo?: () => void;
+}) {
 
 	return (
 		<header className="w-full bg-background border-b border-border sticky top-0 z-50">
@@ -26,17 +40,17 @@ export default function Navbar({ account, setAccount, connectWallet }: { account
 					<nav className="hidden md:flex space-x-8">
 						{NAV_LINKS.map((link) => (
 							<a
-								key={link}
-								href="#"
+								key={link.label}
+								href={link.href}
 								className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors font-body"
 							>
-								{link}
+								{link.label}
 							</a>
 						))}
 					</nav>
 
 					{/* Wallet Actions */}
-					<div className="flex items-center">
+					<div className="flex items-center gap-3">
 						{account ? (
 							<div className="flex items-center gap-4">
 								<div className="hidden sm:flex items-center gap-2 bg-secondary px-3 py-1.5 rounded-md border border-border">
@@ -53,12 +67,20 @@ export default function Navbar({ account, setAccount, connectWallet }: { account
 								</button>
 							</div>
 						) : (
-							<button 
-								onClick={connectWallet} 
-								className="bg-primary text-primary-foreground px-4 py-2 rounded-md text-sm font-medium hover:bg-primary/90 transition-colors font-body shadow-sm"
-							>
-								Connect Wallet
-							</button>
+							<div className="flex items-center gap-2">
+								<button 
+									onClick={() => connectDemo()} 
+									className="bg-secondary hover:bg-secondary/80 text-foreground px-3.5 py-2 rounded-md text-sm font-medium border border-border transition-colors font-body shadow-sm"
+								>
+									Live L1 Dashboard
+								</button>
+								<button 
+									onClick={connectWallet} 
+									className="bg-primary text-primary-foreground px-4 py-2 rounded-md text-sm font-medium hover:bg-primary/90 transition-colors font-body shadow-sm"
+								>
+									Connect Wallet
+								</button>
+							</div>
 						)}
 					</div>
 

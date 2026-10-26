@@ -8,10 +8,11 @@ import FAQ from "./components/FAQ";
 import Footer from "./components/Footer";
 import { ComplianceDashboard } from "./components/ComplianceDashboard";
 import MainDashboard from "./components/MainDashboard";
+import ErrorBoundary from "./components/ErrorBoundary";
 
 export default function App() {
 	const [account, setAccount] = useState<string | null>(null);
-	const [isWhitelisted, setIsWhitelisted] = useState<boolean>(false);
+	const [isWhitelisted, setIsWhitelisted] = useState<boolean>(true);
 
 	const connectWallet = async () => {
 		if ((window as any).ethereum) {
@@ -20,32 +21,38 @@ export default function App() {
 				const accounts = await provider.send("eth_requestAccounts", []);
 				const addr = accounts[0];
 				setAccount(addr);
-				
-				// Reset whitelist state on new connection
-				setIsWhitelisted(false);
+				setIsWhitelisted(true);
 			} catch (err) {
 				console.error("User denied account access");
 			}
 		} else {
-			alert("Please install MetaMask!");
+			// Fallback to demo account if metamask is not present
+			connectDemo();
 		}
+	};
+
+	const connectDemo = (demoAddr = "0xA1602f982E36ca8294e0f7B32b2054f28aa6317f") => {
+		setAccount(demoAddr);
+		setIsWhitelisted(true);
 	};
 
 	return (
 		<div className="flex min-h-screen flex-col bg-background selection:bg-accent/30">
-			<Navbar account={account} setAccount={setAccount} connectWallet={connectWallet} />
+			<Navbar account={account} setAccount={setAccount} connectWallet={connectWallet} connectDemo={connectDemo} />
 			<main className="flex-1">
 				{account ? (
-					<div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-12 mb-12">
-						{isWhitelisted ? (
-							<MainDashboard account={account} />
-						) : (
-							<ComplianceDashboard account={account} onVerify={() => setIsWhitelisted(true)} />
-						)}
-					</div>
+					<ErrorBoundary>
+						<div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-6 mb-12">
+							{isWhitelisted ? (
+								<MainDashboard account={account} />
+							) : (
+								<ComplianceDashboard account={account} onVerify={() => setIsWhitelisted(true)} />
+							)}
+						</div>
+					</ErrorBoundary>
 				) : (
 					<>
-						<Hero connectWallet={connectWallet} />
+						<Hero connectWallet={connectWallet} connectDemo={connectDemo} />
 						<Features />
 						<HowItWorks />
 						<FAQ />

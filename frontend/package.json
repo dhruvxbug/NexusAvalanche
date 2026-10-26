@@ -1,13 +1,12 @@
 {
-	"name": "nexora-automation-hero",
+	"name": "nexuschain-frontend",
 	"private": true,
 	"version": "1.0.0",
 	"type": "module",
 	"scripts": {
 		"dev": "vite",
 		"build": "tsc && vite build",
-		"preview": "vite preview",
-		"verify": "node scripts/verify.mjs"
+		"preview": "vite preview"
 	},
 	"dependencies": {
 		"@avalabs/ac-eerc-sdk": "^2.0.61",

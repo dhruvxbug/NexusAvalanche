@@ -1,5 +1,4 @@
 import { motion } from "framer-motion";
-import { Play } from "lucide-react";
 import DashboardPreview from "./DashboardPreview";
 import { Button } from "./ui/button";
 
@@ -12,7 +11,13 @@ const fadeUp = (y: number, duration: number, delay = 0) => ({
 	transition: { duration, delay, ease: "easeOut" as const },
 });
 
-export default function Hero({ connectWallet }: { connectWallet?: () => void }) {
+export default function Hero({
+	connectWallet = () => {},
+	connectDemo = () => {},
+}: {
+	connectWallet?: () => void;
+	connectDemo?: () => void;
+}) {
 	return (
 		<section className="relative flex flex-1 flex-col items-center px-6 pt-8 md:pt-12">
 			<video
@@ -51,16 +56,11 @@ export default function Hero({ connectWallet }: { connectWallet?: () => void }) 
 					{...fadeUp(16, 0.6, 0.3)}
 					className="mt-5 flex items-center gap-3"
 				>
-					<Button onClick={connectWallet} className="rounded-full px-6 py-5 font-body text-sm font-medium">
-						Connect Wallet
+					<Button onClick={() => connectDemo()} className="rounded-full px-6 py-5 font-body text-sm font-semibold shadow-md">
+						Launch Live L1 Demo
 					</Button>
-					<Button
-						variant="ghost"
-						size="icon"
-						aria-label="Watch product video"
-						className="h-11 w-11 rounded-full border-0 bg-background shadow-[0_2px_12px_rgba(0,0,0,0.08)] hover:bg-background/80"
-					>
-						<Play className="h-4 w-4 fill-foreground text-foreground" />
+					<Button onClick={() => connectWallet()} variant="outline" className="rounded-full px-6 py-5 font-body text-sm font-medium bg-background/80 hover:bg-background">
+						Connect Wallet
 					</Button>
 				</motion.div>
 

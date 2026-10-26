@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { ShieldAlert, CheckCircle2, Loader2, Fingerprint, Activity } from 'lucide-react';
 import { createVeriffFrame } from '@veriff/incontext-sdk';
+import { apiUrl } from '../lib/api';
 
 interface ComplianceDashboardProps {
   account: string;
@@ -9,11 +10,13 @@ interface ComplianceDashboardProps {
 
 export const ComplianceDashboard = ({ account, onVerify }: ComplianceDashboardProps) => {
   const [status, setStatus] = useState<string>('Checking Status...');
+  const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
 
   const checkStatus = async (address: string) => {
+    setError(null);
     try {
-      const response = await fetch(`http://localhost:3001/api/kyc/status/${address}`);
+      const response = await fetch(apiUrl(`/api/kyc/status/${address}`));
       const data = await response.json();
       if (data.isWhitelisted) {
         setStatus('Verified (Whitelisted)');
@@ -25,7 +28,8 @@ export const ComplianceDashboard = ({ account, onVerify }: ComplianceDashboardPr
       }
     } catch (error) {
       console.error('Error fetching KYC status:', error);
-      setStatus('Error fetching status (Backend offline?)');
+      setStatus('Compliance service unreachable');
+      setError('Could not reach the compliance backend. Start it with `npm run dev` inside kyc-backend/ (port 3001).');
       return false;
     }
   };
@@ -54,8 +58,9 @@ export const ComplianceDashboard = ({ account, onVerify }: ComplianceDashboardPr
   const submitKyc = async () => {
     if (!account) return;
     setLoading(true);
+    setError(null);
     try {
-      const response = await fetch(`http://localhost:3001/api/kyc/verify`, {
+      const response = await fetch(apiUrl(`/api/kyc/verify`), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -85,12 +90,12 @@ export const ComplianceDashboard = ({ account, onVerify }: ComplianceDashboardPr
             }
         });
       } else {
-        alert("Error: " + (data.error || "Failed to create KYC request"));
+        setError(data.error || 'Failed to create KYC request');
         setLoading(false);
       }
     } catch (error) {
       console.error(error);
-      alert("Error submitting KYC. Ensure the backend is running on port 3001.");
+      setError('Could not submit the KYC request. Ensure the compliance backend is running on port 3001.');
       setLoading(false);
     }
   };
@@ -143,6 +148,16 @@ export const ComplianceDashboard = ({ account, onVerify }: ComplianceDashboardPr
             </div>
           </div>
         </div>
+
+        {error && (
+          <div className="flex gap-3 p-4 rounded-xl bg-red-50 border border-red-200">
+            <ShieldAlert className="w-5 h-5 text-red-600 shrink-0 mt-0.5" />
+            <div>
+              <h4 className="text-red-800 font-semibold text-sm mb-1">Request failed</h4>
+              <p className="text-red-700 text-sm">{error}</p>
+            </div>
+          </div>
+        )}
 
         {!isVerified && status !== 'Checking Status...' && (
           <div className="pt-4 flex flex-col items-center">

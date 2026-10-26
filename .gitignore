@@ -74,3 +74,11 @@ env/
 # Scratch output from local tooling
 chrome-tmp/
 brag-output/
+
+# Local databases & encrypted document stores
+*.db
+*.sqlite
+*.sqlite-journal
+ipfs-store/
+kyc-backend/prisma/dev.db
+kyc-backend/prisma/dev.db-journal

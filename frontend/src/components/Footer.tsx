@@ -1,5 +1,46 @@
-import { ArrowRight, Twitter, Github, Disc } from "lucide-react";
+import { useState } from "react";
+import { ArrowRight, Github, Check } from "lucide-react";
 import { Button } from "./ui/button";
+
+function NewsletterForm() {
+	const [email, setEmail] = useState("");
+	const [subscribed, setSubscribed] = useState(false);
+
+	if (subscribed) {
+		return (
+			<div className="flex items-center gap-2 font-body text-sm text-muted-foreground">
+				<Check className="h-4 w-4 text-green-600" />
+				You're on the list. We'll be in touch.
+			</div>
+		);
+	}
+
+	return (
+		<form
+			className="relative flex items-center"
+			onSubmit={(e) => {
+				e.preventDefault();
+				if (email.trim()) setSubscribed(true);
+			}}
+		>
+			<input
+				type="email"
+				required
+				value={email}
+				onChange={(e) => setEmail(e.target.value)}
+				placeholder="Enter your email"
+				className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-colors font-body"
+			/>
+			<Button
+				type="submit"
+				size="sm"
+				className="absolute right-1 h-7 rounded-sm px-2 bg-primary text-primary-foreground"
+			>
+				<ArrowRight className="h-3 w-3" />
+			</Button>
+		</form>
+	);
+}
 
 export default function Footer() {
 	return (
@@ -10,6 +51,10 @@ export default function Footer() {
 					<div className="lg:col-span-1">
 						<a
 							href="#"
+							onClick={(e) => {
+								e.preventDefault();
+								window.scrollTo({ top: 0, behavior: "smooth" });
+							}}
 							className="text-xl font-display font-bold text-foreground tracking-tight flex items-center gap-2 mb-4"
 						>
 							<div className="w-6 h-6 bg-primary rounded-sm flex items-center justify-center">
@@ -23,42 +68,27 @@ export default function Footer() {
 					</div>
 
 					<div>
-						<h4 className="font-body text-sm font-semibold text-foreground mb-4">Protocol</h4>
+						<h4 className="font-body text-sm font-semibold text-foreground mb-4">Product</h4>
 						<ul className="space-y-3">
-							<li><a href="#" className="font-body text-sm text-muted-foreground hover:text-foreground transition-colors">Documentation</a></li>
-							<li><a href="#" className="font-body text-sm text-muted-foreground hover:text-foreground transition-colors">Whitepaper</a></li>
-							<li><a href="#" className="font-body text-sm text-muted-foreground hover:text-foreground transition-colors">Explorer</a></li>
-							<li><a href="#" className="font-body text-sm text-muted-foreground hover:text-foreground transition-colors">Validator Setup</a></li>
+							<li><a href="#features" className="font-body text-sm text-muted-foreground hover:text-foreground transition-colors">Features</a></li>
+							<li><a href="#how-it-works" className="font-body text-sm text-muted-foreground hover:text-foreground transition-colors">How It Works</a></li>
+							<li><a href="#faq" className="font-body text-sm text-muted-foreground hover:text-foreground transition-colors">FAQ</a></li>
 						</ul>
 					</div>
 
 					<div>
-						<h4 className="font-body text-sm font-semibold text-foreground mb-4">Ecosystem</h4>
+						<h4 className="font-body text-sm font-semibold text-foreground mb-4">Protocol Stack</h4>
 						<ul className="space-y-3">
-							<li><a href="#" className="font-body text-sm text-muted-foreground hover:text-foreground transition-colors">Grants</a></li>
-							<li><a href="#" className="font-body text-sm text-muted-foreground hover:text-foreground transition-colors">Brand Assets</a></li>
-							<li><a href="#" className="font-body text-sm text-muted-foreground hover:text-foreground transition-colors">Blog</a></li>
-							<li><a href="#" className="font-body text-sm text-muted-foreground hover:text-foreground transition-colors">Careers</a></li>
+							<li><a href="#features" className="font-body text-sm text-muted-foreground hover:text-foreground transition-colors">Native Compliance Precompiles</a></li>
+							<li><a href="#features" className="font-body text-sm text-muted-foreground hover:text-foreground transition-colors">eERC Confidential Payments</a></li>
+							<li><a href="#features" className="font-body text-sm text-muted-foreground hover:text-foreground transition-colors">DID &amp; Verifiable Credentials</a></li>
+							<li><a href="#features" className="font-body text-sm text-muted-foreground hover:text-foreground transition-colors">Cross-Chain Identity (CCIP)</a></li>
 						</ul>
 					</div>
 
 					<div>
 						<h4 className="font-body text-sm font-semibold text-foreground mb-4">Stay Updated</h4>
-						<div className="flex flex-col gap-3">
-							<div className="relative flex items-center">
-								<input
-									type="email"
-									placeholder="Enter your email"
-									className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-colors font-body"
-								/>
-								<Button
-									size="sm"
-									className="absolute right-1 h-7 rounded-sm px-2 bg-primary text-primary-foreground"
-								>
-									<ArrowRight className="h-3 w-3" />
-								</Button>
-							</div>
-						</div>
+						<NewsletterForm />
 					</div>
 
 				</div>
@@ -74,13 +104,13 @@ export default function Footer() {
 					</p>
 
 					<div className="flex items-center gap-4">
-						<a href="#" aria-label="Twitter" className="text-muted-foreground hover:text-foreground transition-colors">
-							<Twitter className="h-4 w-4" />
-						</a>
-						<a href="#" aria-label="Discord" className="text-muted-foreground hover:text-foreground transition-colors">
-							<Disc className="h-4 w-4" />
-						</a>
-						<a href="#" aria-label="GitHub" className="text-muted-foreground hover:text-foreground transition-colors">
+						<a
+							href="https://github.com/dhruvxbug/NexusAvalanche"
+							target="_blank"
+							rel="noreferrer"
+							aria-label="GitHub"
+							className="text-muted-foreground hover:text-foreground transition-colors"
+						>
 							<Github className="h-4 w-4" />
 						</a>
 					</div>

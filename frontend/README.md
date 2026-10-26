@@ -1,15 +1,33 @@
-# Nexora Automation Hero — SaaS Landing Hero with Frosted-Glass Dashboard Preview (React 18 + Framer Motion + Tailwind CSS)
+# NexusChain — The Jurisdiction-Aware L1
 
-[![Watch Demo](./poster.jpg)](./demo.mp4)
+**Frontend** for the NexusAvalanche jurisdiction-aware chain: a React + Vite
+application combining a product landing page with the live operator dashboard
+used to demo the L1.
 
-A single-screen SaaS landing-page hero for a fictional automation product called Nexora — "The Future of *Smarter* Automation". A single 100vh, no-scroll page: minimal navbar, fullscreen ambient background video, Instrument Serif display type over Inter body text, and a fully custom-coded (no images) Mercury-style banking dashboard preview floating in a frosted-glass frame that intentionally overflows and clips at the bottom of the viewport. All colors use semantic `hsl(var(--token))` design tokens. Built with React 18, TypeScript, Vite, Tailwind CSS 3, and Framer Motion. Generated with Claude Fable 5.
+## What's inside
+
+**Logged-out state** — product landing page:
+- Fullscreen ambient hero with a frosted-glass dashboard preview
+- Feature cards, 4-step "How It Works" timeline, animated FAQ
+- Connect Wallet / Live L1 Demo entry points
+
+**Connected state** — the real dashboards:
+- **eERC Payments** — confidential transfers with a live Groth16/ZK-pipeline
+  visualizer, decrypted (owner) vs ciphertext (validator) balance views,
+  and a private mint utility
+- **L1 Devnet Status** — live block height, RPC endpoint, and contract registry
+- **TxAllowList Precompile** — check any address's on-chain permission role
+- **DID & Verifiable Credentials** — DID documents, VC JWTs, encrypted IPFS
+  document storage
+- **Compliance KYC flow** — Veriff in-context verification with on-chain
+  whitelist enforcement
 
 ## Stack
 
 - React 18 + TypeScript + Vite
-- Tailwind CSS 3 (+ `tailwindcss-animate`), all colors via semantic `hsl(var(--token))` design tokens
-- framer-motion staggered entrance animations
-- lucide-react icons, shadcn/ui Button
+- Tailwind CSS 3 with semantic `hsl(var(--token))` design tokens
+- Framer Motion animations, lucide-react icons
+- ethers v6, `@avalabs/ac-eerc-sdk`, `@veriff/incontext-sdk`
 
 ## Run
 
@@ -18,14 +36,6 @@ npm install
 npm run dev
 ```
 
-## Verify (CLI only)
-
-```bash
-npm run build
-npm run preview &   # serves dist on :4173
-npm run verify      # headless Playwright checks (desktop + mobile) + screenshots
-```
-
----
-
-Part of the [Hero sections](../) collection in the [claude-directory](../../) — an open-source gallery of AI-generated UI built with Claude Fable 5. [Browse the live gallery](https://pulkitxm.com/claude-directory).
+The dashboard talks to the compliance backend at `http://localhost:3001`
+(configurable via `VITE_API_URL` in a `.env` file). To see live on-chain data,
+start the full stack first — see the root-level `LOCAL_DEV.md` and `DEMO.md`.

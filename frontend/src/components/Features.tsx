@@ -24,7 +24,7 @@ const features = [
 
 export default function Features() {
 	return (
-		<section className="relative px-6 py-24 md:px-12 lg:px-20 border-t border-border/40">
+		<section id="features" className="relative px-6 py-24 md:px-12 lg:px-20 border-t border-border/40">
 			<div className="absolute inset-0 bg-gradient-to-b from-background via-secondary/10 to-background" />
 			<div className="relative z-10 mx-auto max-w-6xl">
 				<div className="text-center">
