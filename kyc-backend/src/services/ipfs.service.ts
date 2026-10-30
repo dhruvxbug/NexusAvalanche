@@ -20,10 +20,11 @@ const PINATA_JWT = process.env.PINATA_JWT || "";
 const PINATA_API_URL = "https://api.pinata.cloud";
 const LOCAL_STORE_DIR = path.resolve(process.cwd(), "ipfs-store");
 
-// Derive a deterministic encryption key from the admin private key.
-// In production you'd use a dedicated KMS; here we derive from the admin key
-// so the system is self-contained.
-const ADMIN_KEY = process.env.ADMIN_PRIVATE_KEY || "0x56289e99c94b6912bfc12adc093c9b51124f0dc54ac7a766b2bc5ccf558d8027";
+// Derive a deterministic encryption key from the admin private key or dedicated KMS key.
+const ADMIN_KEY = process.env.ADMIN_PRIVATE_KEY || "";
+if (!ADMIN_KEY) {
+  throw new Error("ADMIN_PRIVATE_KEY environment variable is required for IPFS encryption key derivation.");
+}
 const ENCRYPTION_KEY = crypto
   .createHash("sha256")
   .update(ADMIN_KEY)

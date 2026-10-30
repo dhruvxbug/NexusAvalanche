@@ -12,9 +12,10 @@
 import { ethers } from "ethers";
 import crypto from "crypto";
 
-const ADMIN_PRIVATE_KEY =
-  process.env.ADMIN_PRIVATE_KEY ||
-  "0x56289e99c94b6912bfc12adc093c9b51124f0dc54ac7a766b2bc5ccf558d8027";
+const ADMIN_PRIVATE_KEY = process.env.ADMIN_PRIVATE_KEY || "";
+if (!ADMIN_PRIVATE_KEY) {
+  throw new Error("ADMIN_PRIVATE_KEY environment variable is required.");
+}
 const CHAIN_ID = process.env.CHAIN_ID || "99999";
 
 // VC validity period: 1 year

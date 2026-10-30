@@ -20,11 +20,11 @@ const TX_ALLOWLIST = "0x0200000000000000000000000000000000000002";
 const DEPLOYER_ALLOWLIST = "0x0200000000000000000000000000000000000000";
 const EXPECTED_CHAIN_ID = 99999n;
 
-// Well-known avalanche-cli ewoq development key. It is prefunded and is a
-// TxAllowList Admin in genesis.json. Never use it on a public network.
-const ADMIN_KEY =
-  process.env.ADMIN_PRIVATE_KEY ||
-  "0x56289e99c94b6912bfc12adc093c9b51124f0dc54ac7a766b2bc5ccf558d8027";
+const ADMIN_KEY = process.env.ADMIN_PRIVATE_KEY;
+if (!ADMIN_KEY) {
+  console.error("Error: ADMIN_PRIVATE_KEY environment variable is required.");
+  process.exit(1);
+}
 
 export const ROLE_NONE = 0n;
 export const ROLE_ENABLED = 1n;

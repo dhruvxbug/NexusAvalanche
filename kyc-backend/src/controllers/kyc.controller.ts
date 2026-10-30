@@ -57,19 +57,27 @@ export class KycController {
   }
 
   public async webhook(req: Request, res: Response): Promise<void> {
-    const signature = req.headers['x-hmac-signature'];
-    const rawBody = req.body; // In express, ensure this is a raw buffer or string for strict verification
+    const signature = req.headers['x-hmac-signature'] as string | undefined;
+    const rawBody = req.body;
+
+    // Both webhook secret and signature header are strictly required
+    if (!VERIFF_API_SECRET || !signature) {
+      res.status(401).send("Unauthorized: Missing signature or webhook secret");
+      return;
+    }
 
     try {
-      if (VERIFF_API_SECRET && signature) {
-         const calculatedDigest = crypto.createHmac('sha256', VERIFF_API_SECRET)
-             .update(rawBody)
-             .digest('hex');
-         
-         if (calculatedDigest !== signature) {
-             res.status(401).send("Unauthorized: Invalid signature");
-             return;
-         }
+      const calculatedDigest = crypto.createHmac('sha256', VERIFF_API_SECRET)
+          .update(rawBody)
+          .digest('hex');
+      
+      const sigBuffer = Buffer.from(signature, 'utf8');
+      const digestBuffer = Buffer.from(calculatedDigest, 'utf8');
+
+      // Constant-time comparison using timingSafeEqual to prevent timing attacks
+      if (sigBuffer.length !== digestBuffer.length || !crypto.timingSafeEqual(sigBuffer, digestBuffer)) {
+          res.status(401).send("Unauthorized: Invalid signature");
+          return;
       }
 
       // Parse payload

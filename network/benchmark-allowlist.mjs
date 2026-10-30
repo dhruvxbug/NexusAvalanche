@@ -35,9 +35,11 @@ function resolveRpc(arg) {
   return null;
 }
 
-const ADMIN_KEY =
-  process.env.ADMIN_PRIVATE_KEY ||
-  "0x56289e99c94b6912bfc12adc093c9b51124f0dc54ac7a766b2bc5ccf558d8027";
+const ADMIN_KEY = process.env.ADMIN_PRIVATE_KEY;
+if (!ADMIN_KEY) {
+  console.error("Error: ADMIN_PRIVATE_KEY environment variable is required.");
+  process.exit(1);
+}
 
 const stats = (xs) => {
   const s = [...xs].sort((a, b) => a - b);
