@@ -50,8 +50,25 @@ export class EercService {
     return "http://127.0.0.1:9654";
   }
 
-  private async runEercAction(action: string, arg1 = "", arg2 = "", arg3 = "", useCache = false): Promise<any> {
-    const cacheKey = `${action}|${arg1}|${arg2}|${arg3}`;
+  private normalizeNetwork(net?: string): "fuji" | "jurisdictionChain" {
+    if (!net) return "jurisdictionChain";
+    const lower = String(net).toLowerCase();
+    if (lower === "fuji" || lower === "43113" || lower.includes("fuji")) {
+      return "fuji";
+    }
+    return "jurisdictionChain";
+  }
+
+  private async runEercAction(
+    action: string,
+    arg1 = "",
+    arg2 = "",
+    arg3 = "",
+    useCache = false,
+    network?: string
+  ): Promise<any> {
+    const targetNetwork = this.normalizeNetwork(network);
+    const cacheKey = `${targetNetwork}|${action}|${arg1}|${arg2}|${arg3}`;
     if (useCache) {
       const hit = getCached(cacheKey);
       if (hit) return hit;
@@ -69,7 +86,7 @@ export class EercService {
 
     // Serialize Hardhat invocations to avoid resource contention
     const run = inflight.then(async () => {
-      const cmd = `npx hardhat run scripts/eerc-api-runner.ts --network jurisdictionChain --no-compile`;
+      const cmd = `npx hardhat run scripts/eerc-api-runner.ts --network ${targetNetwork} --no-compile`;
       let stdout = "";
       let stderr = "";
       try {
@@ -116,23 +133,27 @@ export class EercService {
     return result;
   }
 
-  async getStatus(): Promise<any> {
-    return this.runEercAction("status", "", "", "", true);
+  async getStatus(network?: string): Promise<any> {
+    return this.runEercAction("status", "", "", "", true, network);
   }
 
-  async getBalance(target: string): Promise<any> {
-    return this.runEercAction("balance", target, "", "", true);
+  async getBalance(target: string, network?: string): Promise<any> {
+    return this.runEercAction("balance", target, "", "", true, network);
   }
 
-  async transfer(senderWallet: number, receiverAddress: string, amount: string): Promise<any> {
-    return this.runEercAction("transfer", String(senderWallet), receiverAddress, amount);
+  async transfer(senderWallet: number, receiverAddress: string, amount: string, network?: string): Promise<any> {
+    return this.runEercAction("transfer", String(senderWallet), receiverAddress, amount, false, network);
   }
 
-  async mint(recipientAddress: string, amount: string): Promise<any> {
-    return this.runEercAction("mint", recipientAddress, amount);
+  async mint(recipientAddress: string, amount: string, network?: string): Promise<any> {
+    return this.runEercAction("mint", recipientAddress, amount, "", false, network);
   }
 
-  async getAllowlistRole(address: string): Promise<any> {
-    return this.runEercAction("allowlist-role", address, "", "", true);
+  async getAllowlistRole(address: string, network?: string): Promise<any> {
+    return this.runEercAction("allowlist-role", address, "", "", true, network);
+  }
+
+  async getTransactions(network?: string): Promise<any> {
+    return this.runEercAction("transactions", "", "", "", false, network);
   }
 }

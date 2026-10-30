@@ -10,6 +10,7 @@ const asyncHandler = (fn: Function) => (req: any, res: any, next: any) => {
 
 router.get("/status", asyncHandler(eercController.getStatus.bind(eercController)));
 router.get("/balance/:address", asyncHandler(eercController.getBalance.bind(eercController)));
+router.get("/transactions", asyncHandler(eercController.getTransactions.bind(eercController)));
 router.post("/transfer", asyncHandler(eercController.transfer.bind(eercController)));
 router.post("/mint", asyncHandler(eercController.mint.bind(eercController)));
 router.get("/allowlist/:address", asyncHandler(eercController.getAllowlistRole.bind(eercController)));
