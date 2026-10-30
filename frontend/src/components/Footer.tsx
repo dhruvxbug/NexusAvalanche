@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ArrowRight, Github, Check } from "lucide-react";
+import { ArrowRight, Github, Check, ExternalLink } from "lucide-react";
 import { Button } from "./ui/button";
 
 function NewsletterForm() {
@@ -77,12 +77,41 @@ export default function Footer() {
 					</div>
 
 					<div>
-						<h4 className="font-body text-sm font-semibold text-foreground mb-4">Protocol Stack</h4>
+						<h4 className="font-body text-sm font-semibold text-foreground mb-4">Avalanche Explorers</h4>
 						<ul className="space-y-3">
-							<li><a href="#features" className="font-body text-sm text-muted-foreground hover:text-foreground transition-colors">Native Compliance Precompiles</a></li>
-							<li><a href="#features" className="font-body text-sm text-muted-foreground hover:text-foreground transition-colors">eERC Confidential Payments</a></li>
-							<li><a href="#features" className="font-body text-sm text-muted-foreground hover:text-foreground transition-colors">DID &amp; Verifiable Credentials</a></li>
-							<li><a href="#features" className="font-body text-sm text-muted-foreground hover:text-foreground transition-colors">Cross-Chain Identity (CCIP)</a></li>
+							<li>
+								<a
+									href="https://testnet.snowtrace.io"
+									target="_blank"
+									rel="noopener noreferrer"
+									className="font-body text-sm text-muted-foreground hover:text-foreground transition-colors inline-flex items-center gap-1.5"
+								>
+									<span>Snowtrace Fuji Testnet</span>
+									<ExternalLink className="h-3 w-3" />
+								</a>
+							</li>
+							<li>
+								<a
+									href="https://subnets.avax.network"
+									target="_blank"
+									rel="noopener noreferrer"
+									className="font-body text-sm text-muted-foreground hover:text-foreground transition-colors inline-flex items-center gap-1.5"
+								>
+									<span>Avalanche Subnet Explorer</span>
+									<ExternalLink className="h-3 w-3" />
+								</a>
+							</li>
+							<li>
+								<a
+									href="https://snowtrace.io"
+									target="_blank"
+									rel="noopener noreferrer"
+									className="font-body text-sm text-muted-foreground hover:text-foreground transition-colors inline-flex items-center gap-1.5"
+								>
+									<span>Snowtrace Mainnet</span>
+									<ExternalLink className="h-3 w-3" />
+								</a>
+							</li>
 						</ul>
 					</div>
 

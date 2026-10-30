@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
-import { ShieldAlert, CheckCircle2, Loader2, Fingerprint, Activity } from 'lucide-react';
+import { ShieldAlert, CheckCircle2, Loader2, Fingerprint, Activity, ExternalLink } from 'lucide-react';
 import { createVeriffFrame } from '@veriff/incontext-sdk';
 import { apiUrl } from '../lib/api';
+import { useExplorer } from '../lib/explorer';
 
 interface ComplianceDashboardProps {
   account: string;
@@ -12,12 +13,18 @@ export const ComplianceDashboard = ({ account, onVerify }: ComplianceDashboardPr
   const [status, setStatus] = useState<string>('Checking Status...');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
+  const [txHash, setTxHash] = useState<string | null>(null);
+
+  const { activePreset, getExplorerAddressUrl, getExplorerTxUrl } = useExplorer();
 
   const checkStatus = async (address: string) => {
     setError(null);
     try {
       const response = await fetch(apiUrl(`/api/kyc/status/${address}`));
       const data = await response.json();
+      if (data.txHash) {
+        setTxHash(data.txHash);
+      }
       if (data.isWhitelisted) {
         setStatus('Verified (Whitelisted)');
         if (onVerify) onVerify();
@@ -112,24 +119,45 @@ export const ComplianceDashboard = ({ account, onVerify }: ComplianceDashboardPr
             Compliance Identity
           </h2>
           <p className="text-muted-foreground max-w-lg">
-            Verify your jurisdiction to unlock trading on the NexusChain. Only cleared wallets are permitted.
+            Verify your jurisdiction to unlock trading on NexusChain. Only cleared wallets are permitted by the native Avalanche Subnet precompile.
           </p>
         </div>
         
-        <div className="bg-secondary p-3 rounded-lg border border-border">
-          <p className="text-muted-foreground text-[10px] font-semibold uppercase tracking-wider mb-1">Network Enforcement</p>
-          <div className="flex items-center gap-2 text-primary font-medium text-sm">
+        <div className="bg-secondary p-3 rounded-lg border border-border flex flex-col gap-1">
+          <p className="text-muted-foreground text-[10px] font-semibold uppercase tracking-wider">Network Enforcement</p>
+          <a
+            href={getExplorerAddressUrl("0x0200000000000000000000000000000000000002")}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-1.5 text-primary font-medium text-sm hover:underline"
+            title="View TxAllowList Precompile on Avalanche Explorer"
+          >
             <Activity className="w-4 h-4" />
-            Active (TxAllowList)
-          </div>
+            <span>Active (TxAllowList)</span>
+            <ExternalLink className="w-3 h-3 text-muted-foreground" />
+          </a>
         </div>
       </div>
       
       <div className="space-y-6">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="p-5 rounded-xl bg-secondary/50 border border-border">
-            <p className="text-muted-foreground text-xs font-semibold uppercase tracking-wider mb-2">Connected Address</p>
-            <p className="text-foreground font-mono text-sm break-all">{account}</p>
+          <div className="p-5 rounded-xl bg-secondary/50 border border-border flex flex-col justify-between">
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-muted-foreground text-xs font-semibold uppercase tracking-wider">Connected Address</p>
+                <a
+                  href={getExplorerAddressUrl(account)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-xs text-primary hover:underline font-semibold inline-flex items-center gap-1"
+                  title={`View address on ${activePreset.shortName}`}
+                >
+                  <span>View on {activePreset.shortName}</span>
+                  <ExternalLink className="w-3 h-3" />
+                </a>
+              </div>
+              <p className="text-foreground font-mono text-sm break-all">{account}</p>
+            </div>
           </div>
           
           <div className="p-5 rounded-xl bg-secondary/50 border border-border flex flex-col justify-center">
@@ -172,13 +200,38 @@ export const ComplianceDashboard = ({ account, onVerify }: ComplianceDashboardPr
         )}
 
         {isVerified && (
-          <div className="p-5 rounded-xl bg-green-50 border border-green-200 mt-6 flex gap-3">
-            <CheckCircle2 className="w-6 h-6 text-green-600 shrink-0" />
-            <div>
-              <h4 className="text-green-800 font-semibold mb-1">Identity Verified</h4>
-              <p className="text-green-700 text-sm">
-                Your address has been successfully written to the TxAllowList precompile.
-              </p>
+          <div className="p-5 rounded-xl bg-green-50 border border-green-200 mt-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="flex gap-3 items-start">
+              <CheckCircle2 className="w-6 h-6 text-green-600 shrink-0 mt-0.5" />
+              <div>
+                <h4 className="text-green-800 font-semibold mb-1">Identity Verified</h4>
+                <p className="text-green-700 text-sm">
+                  Your address has been successfully written to the TxAllowList precompile on the Avalanche L1.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 self-start sm:self-auto shrink-0">
+              {txHash && (
+                <a
+                  href={getExplorerTxUrl(txHash)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="px-3 py-1.5 bg-green-600 text-white rounded-lg text-xs font-semibold hover:bg-green-700 transition-colors inline-flex items-center gap-1.5 shadow-sm"
+                >
+                  <span>View Whitelist Tx</span>
+                  <ExternalLink className="w-3 h-3" />
+                </a>
+              )}
+              <a
+                href={getExplorerAddressUrl(account)}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="px-3 py-1.5 bg-background border border-green-300 text-green-800 rounded-lg text-xs font-semibold hover:bg-green-100 transition-colors inline-flex items-center gap-1.5"
+              >
+                <span>View on Explorer</span>
+                <ExternalLink className="w-3 h-3" />
+              </a>
             </div>
           </div>
         )}

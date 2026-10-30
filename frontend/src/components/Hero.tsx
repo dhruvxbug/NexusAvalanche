@@ -11,12 +11,14 @@ const fadeUp = (y: number, duration: number, delay = 0) => ({
 	transition: { duration, delay, ease: "easeOut" as const },
 });
 
+import { Building2, ShieldCheck } from "lucide-react";
+
 export default function Hero({
 	connectWallet = () => {},
 	connectDemo = () => {},
 }: {
 	connectWallet?: () => void;
-	connectDemo?: () => void;
+	connectDemo?: (role: "transactor" | "auditor") => void;
 }) {
 	return (
 		<section className="relative flex flex-1 flex-col items-center px-6 pt-8 md:pt-12">
@@ -54,12 +56,27 @@ export default function Hero({
 
 				<motion.div
 					{...fadeUp(16, 0.6, 0.3)}
-					className="mt-5 flex items-center gap-3"
+					className="mt-5 flex flex-wrap items-center justify-center gap-3"
 				>
-					<Button onClick={() => connectDemo()} className="rounded-full px-6 py-5 font-body text-sm font-semibold shadow-md">
-						Launch Live L1 Demo
+					<Button
+						onClick={() => connectDemo("transactor")}
+						className="rounded-full px-5 py-5 font-body text-sm font-semibold shadow-md bg-primary hover:bg-primary/90 flex items-center gap-2"
+					>
+						<Building2 className="h-4 w-4" />
+						<span>Enterprise Transactor Demo</span>
 					</Button>
-					<Button onClick={() => connectWallet()} variant="outline" className="rounded-full px-6 py-5 font-body text-sm font-medium bg-background/80 hover:bg-background">
+					<Button
+						onClick={() => connectDemo("auditor")}
+						className="rounded-full px-5 py-5 font-body text-sm font-semibold shadow-md bg-emerald-600 hover:bg-emerald-700 text-white flex items-center gap-2"
+					>
+						<ShieldCheck className="h-4 w-4" />
+						<span>Regulatory Auditor Demo</span>
+					</Button>
+					<Button
+						onClick={() => connectWallet()}
+						variant="outline"
+						className="rounded-full px-5 py-5 font-body text-sm font-medium bg-background/80 hover:bg-background"
+					>
 						Connect Wallet
 					</Button>
 				</motion.div>
